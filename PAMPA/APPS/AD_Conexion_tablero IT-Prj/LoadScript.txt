@@ -1,0 +1,100 @@
+﻿///$tab Main
+SET ThousandSep='.';
+SET DecimalSep=',';
+SET MoneyThousandSep='.';
+SET MoneyDecimalSep=',';
+SET MoneyFormat='$ #.##0,00;$-#.##0,00';
+SET TimeFormat='hh:mm:ss TT';
+SET DateFormat='DD/MM/YYYY';
+SET TimestampFormat='DD/MM/YYYY hh:mm:ss[.fff] TT';
+SET MonthNames='ene;feb;mar;abr;may;jun;jul;ago;sep;oct;nov;dic';
+SET DayNames='lun;mar;mié;jue;vie;sáb;dom';
+
+CONNECT TO 'Provider=ADsDSOObject';
+
+
+///$tab OU
+OU:
+LOAD 
+			sAMAccountName		as		OU;
+		Select
+			sAMAccountName
+		FROM 'LDAP://DC=pampa,DC=dns'
+		WHERE 	objectCategory ='organizationalUnit';
+///$tab Buenos Aires
+BUE:
+LOAD 
+			givenName				as				Nombre,
+			sn						as				Apellido,
+			sAMAccountName			as				Alias,
+			title					as				Puesto,
+			company					as				Compania,
+			department				as				Departamento,
+			physicalDeliveryOfficeName		as			Oficina,
+			manager					as				Supervisor,
+//			directReports			as				Supervisa_a,
+			extensionAttribute1		as				CeCo_Actual,
+			extensionAttribute2		as				CeCo_Anterior,
+			employeeID				as				Nro_Empleado,
+			cn						as				NombreyApellido,
+			distinguishedName,
+//			displayName,
+			whenCreated				as				Creado_en;
+		Select
+			givenName,
+			sn,
+			sAMAccountName,
+			title,
+			company,
+			department,
+			physicalDeliveryOfficeName,
+			manager,
+//			directReports,
+			extensionAttribute1,
+			extensionAttribute2,
+			employeeID,
+			cn,
+			distinguishedName,
+//			displayName,
+			whenCreated
+		FROM 'LDAP://OU=Buenos Aires,DC=pampa,DC=dns'
+		WHERE 	objectCategory ='person';
+///$tab Bahia Blanca
+//BHI:
+//LOAD 
+//			givenName				as				Nombre,
+//			sn						as				Apellido,
+//			sAMAccountName			as				Alias,
+//			title					as				Puesto,
+//			company					as				Compania,
+//			department				as				Departamento,
+//			physicalDeliveryOfficeName		as			Oficina,
+//			manager					as				Supervisor,
+////			directReports			as				Supervisa_a,
+//			extensionAttribute1		as				CeCo_Actual,
+//			extensionAttribute2		as				CeCo_Anterior,
+//			employeeID				as				Nro_Empleado,
+//			cn						as				NombreyApellido,
+//			distinguishedName,
+////			displayName,
+//			whenCreated				as				Creado_en;
+//		Select
+//			givenName,
+//			sn,
+//			sAMAccountName,
+//			title,
+//			company,
+//			department,
+//			physicalDeliveryOfficeName,
+//			manager,
+////			directReports,
+//			extensionAttribute1,
+//			extensionAttribute2,
+//			employeeID,
+//			cn,
+//			distinguishedName,
+////			displayName,
+//			whenCreated
+//		FROM 'LDAP://OU=Bahia Blanca,DC=pampa,DC=dns'
+//		WHERE 	objectCategory ='person';
+///$tab Main 5

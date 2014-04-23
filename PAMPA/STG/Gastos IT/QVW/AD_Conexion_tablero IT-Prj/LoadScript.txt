@@ -1,0 +1,154 @@
+﻿///$tab Main
+SET ThousandSep='.';
+SET DecimalSep=',';
+SET MoneyThousandSep='.';
+SET MoneyDecimalSep=',';
+SET MoneyFormat='$ #.##0,00;$-#.##0,00';
+SET TimeFormat='hh:mm:ss TT';
+SET DateFormat='DD/MM/YYYY';
+SET TimestampFormat='DD/MM/YYYY hh:mm:ss[.fff] TT';
+SET MonthNames='ene;feb;mar;abr;may;jun;jul;ago;sep;oct;nov;dic';
+SET DayNames='lun;mar;mié;jue;vie;sáb;dom';
+
+CONNECT TO 'Provider=ADsDSOObject';
+///$tab OU
+OU:
+LOAD 
+			sAMAccountName		as		OU;
+		Select
+			sAMAccountName
+		FROM 'LDAP://DC=pampa,DC=dns'
+		WHERE 	objectCategory ='organizationalUnit';
+
+//		LOAD
+//			ADsPath,
+//			SubField(left(ADsPath2, len(ADsPath2)-1), ',OU=', 2) as tmp0,
+//			SubField(left(ADsPath2, len(ADsPath2)-1), ',OU=') as tmp1;
+//		LOAD
+//			ADsPath,
+//			Replace(Replace(ADsPath,'LDAP://',''),'DC=pampa,DC=dns', '') as ADsPath2;
+//		Select
+//			ADsPath
+//		FROM 'LDAP://OU=Buenos Aires,DC=pampa,DC=dns'
+//		WHERE 	objectCategory ='organizationalUnit';
+///$tab Buenos Aires
+BUE:
+LOAD 
+			givenName				as				Nombre,
+			sn						as				Apellido,
+			sAMAccountName			as				Alias,
+			title					as				Puesto,
+			company					as				Compania,
+			department				as				Departamento,
+			physicalDeliveryOfficeName		as			Oficina,
+			manager					as				Supervisor,
+//			directReports			as				Supervisa_a,
+			extensionAttribute1		as				CeCo_Actual,
+			extensionAttribute2		as				CeCo_Anterior,
+			employeeID				as				Nro_Empleado,
+			cn						as				NombreyApellido,
+			distinguishedName,
+			Replace(Replace(Replace(distinguishedName,'LDAP://',''),'DC=pampa,DC=dns', ''),'CN=','') as distinguishedName2,
+			
+//			displayName,
+			whenCreated				as				Creado_en;
+		Select
+			givenName,
+			sn,
+			sAMAccountName,
+			title,
+			company,
+			department,
+			physicalDeliveryOfficeName,
+			manager,
+//			directReports,
+			extensionAttribute1,
+			extensionAttribute2,
+			employeeID,
+			cn,
+			distinguishedName,
+//			displayName,
+			whenCreated
+		FROM 'LDAP://OU=Buenos Aires,DC=pampa,DC=dns'
+		WHERE 	objectCategory ='person';
+
+TMP:
+LOAD
+	distinguishedName2,
+	SubField(left(distinguishedName2, len(distinguishedName2)-1), ',OU=', 1) as tmp1,
+	SubField(left(distinguishedName2, len(distinguishedName2)-1), ',OU=', 2) as tmp2,
+	SubField(left(distinguishedName2, len(distinguishedName2)-1), ',OU=', 3) as tmp3,
+	SubField(left(distinguishedName2, len(distinguishedName2)-1), ',OU=', 4) as tmp4,
+	SubField(left(distinguishedName2, len(distinguishedName2)-1), ',OU=', 5) as tmp5
+RESIDENT BUE;
+
+Jerarquia:
+LOAD
+	distinguishedName2,
+	IF(not IsNull(tmp5), tmp5,
+		IF(not IsNull(tmp4), tmp4,
+			IF(not IsNull(tmp3), tmp3,
+				IF(not IsNull(tmp2), tmp2,
+					tmp1
+				)
+			)
+		)
+	)													AS Nivel1,
+	IF(not IsNull(tmp4), tmp4,
+		IF(not IsNull(tmp3), tmp3,
+			IF(not IsNull(tmp2), tmp2,
+				tmp1
+			)
+		)
+	)													AS Nivel2,
+	IF(not IsNull(tmp3), tmp3,
+		IF(not IsNull(tmp2), tmp2,
+			tmp1
+		)
+	)													AS Nivel3,
+	IF(not IsNull(tmp2), tmp2,
+		tmp1
+	)													AS Nivel4,
+	tmp1												AS Nivel5
+RESIDENT TMP;
+
+DROP TABLE TMP;
+///$tab Bahia Blanca
+//BHI:
+//LOAD 
+//			givenName				as				Nombre,
+//			sn						as				Apellido,
+//			sAMAccountName			as				Alias,
+//			title					as				Puesto,
+//			company					as				Compania,
+//			department				as				Departamento,
+//			physicalDeliveryOfficeName		as			Oficina,
+//			manager					as				Supervisor,
+////			directReports			as				Supervisa_a,
+//			extensionAttribute1		as				CeCo_Actual,
+//			extensionAttribute2		as				CeCo_Anterior,
+//			employeeID				as				Nro_Empleado,
+//			cn						as				NombreyApellido,
+//			distinguishedName,
+////			displayName,
+//			whenCreated				as				Creado_en;
+//		Select
+//			givenName,
+//			sn,
+//			sAMAccountName,
+//			title,
+//			company,
+//			department,
+//			physicalDeliveryOfficeName,
+//			manager,
+////			directReports,
+//			extensionAttribute1,
+//			extensionAttribute2,
+//			employeeID,
+//			cn,
+//			distinguishedName,
+////			displayName,
+//			whenCreated
+//		FROM 'LDAP://OU=Bahia Blanca,DC=pampa,DC=dns'
+//		WHERE 	objectCategory ='person';
+///$tab Main 5

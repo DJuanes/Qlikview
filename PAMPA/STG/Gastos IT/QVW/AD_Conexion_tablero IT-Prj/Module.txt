@@ -1,0 +1,26 @@
+﻿Public Function LeerAD()
+	Set objConnection = CreateObject("ADODB.Connection")
+	Set objCommand =   CreateObject("ADODB.Command")
+	
+	objConnection.Provider = "ADsDSOObject"
+	objConnection.Open "Active Directory Provider"
+	
+	Set objCommand.ActiveConnection = objConnection
+	objCommand.Properties("Page Size") = 1000
+	objCommand.CommandText = "<LDAP://OU=Users,OU=Tesoreria,OU=WO,OU=Buenos Aires,DC=pampa,DC=dns>;(objectCategory=User);Name;onelevel"  
+
+	sAD = ""
+	Set objRecordSet = objCommand.Execute
+	objRecordSet.MoveFirst
+	Do Until objRecordSet.EOF
+		sAD = sAD & objRecordSet.Fields("Name").Value & chr(13)
+		objRecordSet.MoveNext
+	Loop
+	msgbox( sAD )
+
+	set vAD = ActiveDocument.Variables("sAD")
+	vAD.SetContent sAD , true
+
+	objConnection.Close
+End Function
+

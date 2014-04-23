@@ -1,0 +1,2 @@
+SET USR_FILES = 'C:\dataiq\PAMPA\USR_FILES\Gastos IT';
+SET DATA = 'C:\dataiq\PAMPA\DATA\Gastos IT';

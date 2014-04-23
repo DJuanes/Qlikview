@@ -1,0 +1,77 @@
+﻿///$tab Main
+BINARY "C:\dataiq\PAMPA\STG\Tablero Distribucion de Gastos IT\QVW\AD_Conexion_tablero IT.qvw";
+DROP Table Jerarquia;
+
+SET ThousandSep='.';
+SET DecimalSep=',';
+SET MoneyThousandSep='.';
+SET MoneyDecimalSep=',';
+SET MoneyFormat='$ #.##0,00;$-#.##0,00';
+SET TimeFormat='hh:mm:ss TT';
+SET DateFormat='DD/MM/YYYY';
+SET TimestampFormat='DD/MM/YYYY hh:mm:ss[.fff] TT';
+SET MonthNames='ene;feb;mar;abr;may;jun;jul;ago;sep;oct;nov;dic';
+SET DayNames='lun;mar;mié;jue;vie;sáb;dom';
+///$tab Buenos Aires
+TMP:
+LOAD
+	distinguishedName2,
+	SubField(left(distinguishedName2, len(distinguishedName2)-1), ',OU=', 1) as tmp1,
+	SubField(left(distinguishedName2, len(distinguishedName2)-1), ',OU=', 2) as tmp2,
+	SubField(left(distinguishedName2, len(distinguishedName2)-1), ',OU=', 3) as tmp3,
+	SubField(left(distinguishedName2, len(distinguishedName2)-1), ',OU=', 4) as tmp4,
+	SubField(left(distinguishedName2, len(distinguishedName2)-1), ',OU=', 5) as tmp5
+RESIDENT BUE;
+
+Jerarquia:
+LOAD
+	distinguishedName2,
+	tmp1							AS Nivel1,
+	Null()							AS Nivel2,
+	Null()							AS Nivel3,
+	Null()							AS Nivel4,
+	Null()							AS Nivel5
+RESIDENT TMP
+WHERE IsNull(tmp5) and IsNull(tmp4) and IsNull(tmp3) and IsNull(tmp2);
+CONCATENATE(Jerarquia)
+LOAD
+	distinguishedName2,
+	tmp2							AS Nivel1,
+	tmp1							AS Nivel2,
+	Null()							AS Nivel3,
+	Null()							AS Nivel4,
+	Null()							AS Nivel5
+RESIDENT TMP
+WHERE IsNull(tmp5) and IsNull(tmp4) and IsNull(tmp3) and not IsNull(tmp2);
+CONCATENATE(Jerarquia)
+LOAD
+	distinguishedName2,
+	tmp3							AS Nivel1,
+	tmp2							AS Nivel2,
+	tmp1							AS Nivel3,
+	Null()							AS Nivel4,
+	Null()							AS Nivel5
+RESIDENT TMP
+WHERE IsNull(tmp5) and IsNull(tmp4) and not IsNull(tmp3);
+CONCATENATE(Jerarquia)
+LOAD
+	distinguishedName2,
+	tmp4							AS Nivel1,
+	tmp3							AS Nivel2,
+	tmp2							AS Nivel3,
+	tmp1							AS Nivel4,
+	Null()							AS Nivel5
+RESIDENT TMP
+WHERE IsNull(tmp5) and not IsNull(tmp4);
+CONCATENATE(Jerarquia)
+LOAD
+	distinguishedName2,
+	tmp5							AS Nivel1,
+	tmp4							AS Nivel2,
+	tmp3							AS Nivel3,
+	tmp2							AS Nivel4,
+	tmp1							AS Nivel5
+RESIDENT TMP
+WHERE not IsNull(tmp5);
+
+DROP TABLE TMP;

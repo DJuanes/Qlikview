@@ -1,0 +1,68 @@
+﻿///$tab Main
+$(Include=..\..\..\apps\cfg\path_tablero distribucion de gastos it.txt);
+
+SET ThousandSep='.';
+SET DecimalSep=',';
+SET MoneyThousandSep='.';
+SET MoneyDecimalSep=',';
+SET MoneyFormat='$ #.##0,00;$-#.##0,00';
+SET TimeFormat='hh:mm:ss TT';
+SET DateFormat='DD/MM/YYYY';
+SET TimestampFormat='DD/MM/YYYY hh:mm:ss[.fff] TT';
+SET MonthNames='ene;feb;mar;abr;may;jun;jul;ago;sep;oct;nov;dic';
+SET DayNames='lun;mar;mié;jue;vie;sáb;dom';
+///$tab START
+X_ReloadTime:
+LOAD
+	NOW() 		AS StartTime,
+	OSUSER()	AS ReloadUser
+AUTOGENERATE (1);
+///$tab Usuarios
+IF FileSize('$(USR_FILES)\AD\Historicos\USR_CeCo.xlsx')>0 then
+
+	Usuarios:
+	LOAD Distinct
+		Alias & [Centro de Costo] & Capitalize(Apellido) & Capitalize(Nombre)	AS %KEY_USER,
+		Upper(Alias)															AS Alias, 
+		Capitalize(Apellido)													AS Apellido, 
+		Capitalize(Nombre)														AS Nombre, 
+		Upper(USR)																AS USR, 
+		Baja, 
+		[Centro de Costo]														AS CeCo, 
+		Gerencia, 
+		GrupoSoc, 
+		Cod_Soc																	AS Soc_Cod, 
+		[Soc Largo]																AS Soc_Desc, 
+		[Soc Corto]																AS Soc_Abr, 
+		Provincia, 
+		[Centro de Costo_F]														AS CeCo_F, 
+		Gerencia_F, 
+		GrupoSoc_F, 
+		Cod_Soc_F																AS Soc_Cod_F, 
+		[Soc Largo_F]															AS SocLar_F, 
+		[Soc Corto_F]															AS SocCor_F, 
+		Provincia_F
+	FROM [$(USR_FILES)\AD\Historicos\USR_CeCo.xlsx]
+	(ooxml, embedded labels, table is Hoja1);
+
+	IF FileSize ('$(DATA)\QVD\Usuarios.qvd')>0 then
+		CONCATENATE (Usuarios)
+		LOAD *
+		FROM $(DATA)\QVD\Usuarios.qvd (qvd)
+		WHERE not Exists (%KEY_USER);
+	ENDIF
+
+	STORE Usuarios INTO $(DATA)\QVD\Usuarios.qvd;
+	DROP TABLE Usuarios;
+
+ENDIF
+///$tab END
+JOIN (X_ReloadTime)
+LOAD 
+	NOW() 								AS EndTime 
+AUTOGENERATE(1);
+
+tExecTime:
+LOAD
+	TIME(EndTime-StartTime,'hh:mm:ss') 	AS execTime
+RESIDENT X_ReloadTime;

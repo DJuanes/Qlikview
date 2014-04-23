@@ -1,0 +1,71 @@
+﻿///$tab Main
+$(Include=..\..\..\apps\cfg\path_tablero distribucion de gastos it.txt);
+
+SET ThousandSep='.';
+SET DecimalSep=',';
+SET MoneyThousandSep='.';
+SET MoneyDecimalSep=',';
+SET MoneyFormat='$ #.##0,00;$-#.##0,00';
+SET TimeFormat='hh:mm:ss TT';
+SET DateFormat='DD/MM/YYYY';
+SET TimestampFormat='DD/MM/YYYY hh:mm:ss[.fff] TT';
+SET MonthNames='ene;feb;mar;abr;may;jun;jul;ago;sep;oct;nov;dic';
+SET DayNames='lun;mar;mié;jue;vie;sáb;dom';
+///$tab START
+X_ReloadTime:
+LOAD
+	NOW() 		AS StartTime,
+	OSUSER()	AS ReloadUser
+AUTOGENERATE (1);
+///$tab Usuarios
+IF FileSize('$(USR_FILES)\Telefonía\Historicos\Telefonia_20*.xlsx')>0 then
+
+	Telefonia:
+	LOAD Distinct
+		Periodo & Upper(Alias) & TipoEquipo & Numero	AS %KEY_TEL,
+		Periodo, 
+		Numero, 
+		TipoEquipo, 
+		Capitalize(Apellido)							AS Apellido, 
+		Capitalize(Nombre)								AS Nombre, 
+		Upper(Alias)									AS Alias, 
+		ClienteID, 
+		DescripcionDeEmpresa, 
+		PlanDeVoz, 
+		ServiciosDeVoz, 
+		PackSMS, 
+		PackDatos, 
+		Garantia, 
+		OtrosServicios, 
+		TotalCargosFijos, 
+		Voz, 
+		RedLocal, 
+		MensajesYContenidos, 
+		Datos, 
+		Roaming, 
+		OtrosCargos, 
+		TotalCargosVariables, 
+		CargosPorUnicaVez, 
+		TotalCargosFijosYVariables, 
+		CostoFijaLocales								AS BasLoc,
+		CostoFijaDDI									AS BasDDI,
+		CostoFijaDDN									AS BasDDN,
+		CostoFijaCelulares								AS BasCel,
+		CostoFijaNeto									AS BasNeto
+	FROM [$(USR_FILES)\Telefonía\Historicos\Telefonia_20*.xlsx]
+	(ooxml, embedded labels, table is Hoja1);
+
+	STORE Telefonia INTO $(DATA)\QVD\Telefonia.qvd;
+	DROP TABLE Telefonia;
+
+ENDIF
+///$tab END
+JOIN (X_ReloadTime)
+LOAD 
+	NOW() 								AS EndTime 
+AUTOGENERATE(1);
+
+tExecTime:
+LOAD
+	TIME(EndTime-StartTime,'hh:mm:ss') 	AS execTime
+RESIDENT X_ReloadTime;

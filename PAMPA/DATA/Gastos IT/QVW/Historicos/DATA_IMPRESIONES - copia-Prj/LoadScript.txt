@@ -1,0 +1,116 @@
+﻿///$tab Main
+$(Must_Include=..\..\..\..\apps\cfg\path_tablero distribucion de gastos it.txt);
+
+SET ThousandSep='.';
+SET DecimalSep=',';
+SET MoneyThousandSep='.';
+SET MoneyDecimalSep=',';
+SET MoneyFormat='$ #.##0,00;$-#.##0,00';
+SET TimeFormat='hh:mm:ss TT';
+SET DateFormat='DD/MM/YYYY';
+SET TimestampFormat='DD/MM/YYYY hh:mm:ss[.fff] TT';
+SET MonthNames='ene;feb;mar;abr;may;jun;jul;ago;sep;oct;nov;dic';
+SET DayNames='lun;mar;mié;jue;vie;sáb;dom';
+///$tab START
+X_ReloadTime:
+LOAD
+	NOW() 		AS StartTime,
+	OSUSER()	AS ReloadUser
+AUTOGENERATE (1);
+///$tab Impresiones
+tmp:
+LOAD
+	@1										AS Maquina, 
+	@2										AS [Total Jobs], 
+	@3										AS Color, 
+	@4										AS Mono, 
+	@5										AS Sheets, 
+	@6										AS [Total Pages], 
+	@7										AS [Job Cost],
+	if (Left(@1,2) <> '\\', @1)				AS User,
+	RecNo()						 			AS N
+FROM
+[C:\dataiq\PAMPA\USR_FILES\Tablero Distribucion de Gastos IT\Impresiones\Impresiones_201201.xls]
+(biff, no labels, table is Sheet1$, filters(
+Remove(Row, RowCnd(Compound,
+	RowCnd(CellValue, 1, StrCnd(start, 'Total')),
+	RowCnd(CellValue, 1, StrCnd(start, 'Summary'))
+)),
+Remove(Row, RowCnd(CellValue, 1, StrCnd(start, 'Total'))),
+Remove(Row, RowCnd(CellValue, 1, StrCnd(start, 'Summary')))
+));
+
+Let vMaxN = peek('N');
+
+Usr:
+LOAD
+	User,
+	X,
+	if(IsNull(Previous(X)),$(vMaxN),Previous(X)-1)	AS Y;
+LOAD
+	User,
+	N				AS X
+RESIDENT tmp
+WHERE not IsNull(User)
+ORDER BY N desc;
+
+
+Impresiones:
+LOAD
+	Maquina, 
+	[Total Jobs], 
+	Color, 
+	Mono, 
+	Sheets, 
+	[Total Pages], 
+	[Job Cost],
+	N
+RESIDENT tmp
+WHERE IsNull(User);
+
+DROP TABLE tmp;
+
+LEFT JOIN(Impresiones)
+IntervalMatch (N)
+LOAD X, Y
+RESIDENT Usr;
+
+LEFT JOIN(Impresiones)
+LOAD X, Y, User
+RESIDENT Usr;
+
+DROP TABLE Usr;
+EXIT Script
+
+
+IF FileSize('$(USR_FILES)\Impresiones\Impresiones_20*.xlsx')>0 then
+	Impresiones:
+	LOAD
+		Periodo & Upper(Alias)			AS %KEY_PeriodoAlias,
+		Sum(IColor)						AS IColor, 
+		Sum(IMono)						AS IMono
+	FROM [$(USR_FILES)\Impresiones\Historicos\Impresiones_20*.xlsx]
+		(ooxml, embedded labels, table is hoja1)
+	WHERE not IsNull(Alias)
+	GROUP BY Periodo & Upper(Alias);
+
+	IF FileSize ('$(DATA)\QVD\Impresiones.qvd')>0 then
+		CONCATENATE (Impresiones)
+		LOAD *
+		FROM $(DATA)\QVD\Impresiones.qvd (qvd)
+		WHERE not Exists (%KEY_PeriodoAlias);
+	ENDIF
+
+	STORE Impresiones INTO $(DATA)\QVD\Impresiones.qvd;
+	DROP TABLE Impresiones;
+ENDIF
+///$tab END
+JOIN (X_ReloadTime)
+LOAD 
+	NOW() 								AS EndTime 
+AUTOGENERATE(1);
+
+tExecTime:
+LOAD
+	TIME(EndTime-StartTime,'hh:mm:ss') 	AS execTime
+RESIDENT X_ReloadTime;

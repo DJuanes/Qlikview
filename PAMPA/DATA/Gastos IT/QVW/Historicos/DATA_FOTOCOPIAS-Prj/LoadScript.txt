@@ -1,0 +1,54 @@
+﻿///$tab Main
+$(Must_Include=..\..\..\..\apps\cfg\path_tablero distribucion de gastos it.txt);
+
+SET ThousandSep='.';
+SET DecimalSep=',';
+SET MoneyThousandSep='.';
+SET MoneyDecimalSep=',';
+SET MoneyFormat='$ #.##0,00;$-#.##0,00';
+SET TimeFormat='hh:mm:ss TT';
+SET DateFormat='DD/MM/YYYY';
+SET TimestampFormat='DD/MM/YYYY hh:mm:ss[.fff] TT';
+SET MonthNames='ene;feb;mar;abr;may;jun;jul;ago;sep;oct;nov;dic';
+SET DayNames='lun;mar;mié;jue;vie;sáb;dom';
+///$tab START
+X_ReloadTime:
+LOAD
+	NOW() 		AS StartTime,
+	OSUSER()	AS ReloadUser
+AUTOGENERATE (1);
+///$tab Fotocopias
+IF FileSize('$(USR_FILES)\Fotocopias\Historicos\Fotocopias_20*.xlsx')>0 then
+	Fotocopias:
+	LOAD
+		Periodo & Upper(USR) & Equipo	AS %KEY_PeriodoUSREq,
+		Periodo,
+		Upper(USR)						AS USR,
+		Equipo							AS Maquina,
+		Sum(FColor)						AS FColor,
+		Sum(FNegro)						AS FNegro
+	FROM [$(USR_FILES)\Fotocopias\Historicos\Fotocopias_20*.xlsx]
+		(ooxml, embedded labels, table is hoja1)
+	WHERE Total > 0
+	GROUP BY Periodo & Upper(USR) & Equipo, Periodo, Upper(USR), Equipo;
+
+	IF FileSize ('$(DATA)\QVD\Fotocopias.qvd')>0 then
+		CONCATENATE (Fotocopias)
+		LOAD *
+		FROM $(DATA)\QVD\Fotocopias.qvd (qvd)
+		WHERE not Exists (%KEY_PeriodoUSREq);
+	ENDIF
+
+	STORE Fotocopias INTO $(DATA)\QVD\Fotocopias.qvd;
+	DROP TABLE Fotocopias;
+ENDIF
+///$tab END
+JOIN (X_ReloadTime)
+LOAD 
+	NOW() 								AS EndTime 
+AUTOGENERATE(1);
+
+tExecTime:
+LOAD
+	TIME(EndTime-StartTime,'hh:mm:ss') 	AS execTime
+RESIDENT X_ReloadTime;
